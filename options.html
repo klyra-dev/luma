@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Luma — Options</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #f7f9fc;
+      --accent: #2b6ef6;
+      --muted: #6b7280;
+      --radius: 10px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color-scheme: light;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(180deg, #fbfdff, #ffffff);
+      color: #0f172a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      min-width: 320px;
+    }
+
+    header {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      line-height: 1;
+    }
+
+    p.lead {
+      margin: 6px 0 18px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .card {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom: 10px;
+      flex-wrap:wrap;
+    }
+
+    label {
+      font-size: 13px;
+      color: #0f172a;
+      min-width: 170px;
+      display:inline-block;
+    }
+
+    .controls {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      flex:1;
+    }
+
+    input[type="range"] { width: 220px; }
+    input[type="number"] { width: 84px; padding:6px 8px; border-radius:6px; border:1px solid #e6edf3; background:#fff; }
+    select, button {
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid #e6edf3;
+      background:#fff;
+      cursor:pointer;
+    }
+
+    .muted { color: var(--muted); font-size:12px; margin-top:6px; }
+
+    .actions { display:flex; gap:10px; margin-top:8px; }
+    button.primary { background:var(--accent); color:white; border-color: #245ce6; }
+    button.warn { background: #fff7f6; color: #b91c1c; border: 1px solid #ffd7d3; }
+
+    footer {
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .small {
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .inline {
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon-48.png" width="36" height="36" alt="Luma icon" />
+    <div>
+      <h1>Luma — Options</h1>
+      <p class="lead">Advanced settings and data tools for the Brightness Controller extension.</p>
+    </div>
+  </header>
+
+  <main>
+    <!-- Storage and default behaviour -->
+    <section class="card" aria-labelledby="generalHeading">
+      <h2 id="generalHeading" style="font-size:14px;margin:0 0 10px 0;">General</h2>
+
+      <div class="row">
+        <label for="storageType">Storage type</label>
+        <div class="controls">
+          <select id="storageType" aria-describedby="storageDesc">
+            <option value="sync">Chrome Sync (recommended)</option>
+            <option value="local">Local (this device)</option>
+          </select>
+        </div>
+      </div>
+      <div id="storageDesc" class="small muted">Choose whether settings sync across devices (Chrome Sync) or remain local to this profile.</div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(15,23,42,0.06)" />
+
+      <div class="row">
+        <label for="defaultBrightness">Default brightness</label>
+        <div class="controls inline">
+          <input id="defaultBrightness" type="number" min="10" max="200" step="1" /> <span class="small">%</span>
+        </div>
+      </div>
+
+      <div class="row" aria-hidden="true">
+        <label>Preview</label>
+        <div class="controls">
+          <input id="defaultRange" type="range" min="10" max="200" step="1" />
+          <div id="defaultLabel" class="small" style="min-width:48px;text-align:right">100%</div>
+        </div>
+      </div>
+
+      <div class="muted">Set the baseline brightness applied to pages unless a site-specific override exists.</div>
+    </section>
+
+    <!-- Advanced settings -->
+    <section class="card" aria-labelledby="advancedHeading">
+      <h2 id="advancedHeading" style="font-size:14px;margin:0 0 10px 0;">Advanced</h2>
+
+      <div class="row">
+        <label for="smoothToggle">Smooth transitions</label>
+        <div class="controls">
+          <input id="smoothToggle" type="checkbox" /> <span class="small">Animate changes between brightness values</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="transitionMs">Transition duration</label>
+        <div class="controls inline">
+          <input id="transitionMs" type="number" min="0" max="5000" step="50" /> <span class="small">ms</span>
+        </div>
+      </div>
+
+      <div class="muted">These settings control whether brightness changes are animated and how long the animation lasts. Some pages may restrict style changes; animation is honored where possible.</div>
+    </section>
+
+    <!-- Import / Export and Reset -->
+    <section class="card" aria-labelledby="dataHeading">
+      <h2 id="dataHeading" style="font-size:14px;margin:0 0 10px 0;">Data & tools</h2>
+
+      <div class="row">
+        <label>Export settings</label>
+        <div class="controls">
+          <button id="exportBtn">Export JSON</button>
+          <span class="small muted">Download a JSON file with all saved settings.</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="importFile">Import settings</label>
+        <div class="controls">
+          <input id="importFile" type="file" accept="application/json" />
+          <button id="importBtn">Import</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>Reset extension data</label>
+        <div class="controls">
+          <button id="resetSiteBtn">Clear Site Overrides</button>
+          <button id="resetAllBtn" class="warn">Reset All</button>
+        </div>
+      </div>
+
+      <div class="muted">Use these tools to back up, restore, or clear your Luma settings. Exported files are local only and contain no personal browsing data beyond saved extension settings.</div>
+    </section>
+
+    <!-- Placeholder for future options -->
+    <section class="card" aria-labelledby="placeholderHeading">
+      <h2 id="placeholderHeading" style="font-size:14px;margin:0 0 10px 0;">Experimental / Placeholder</h2>
+      <div class="row">
+        <label>Per-site default scope</label>
+        <div class="controls">
+          <select id="siteScope">
+            <option value="domain">Domain (example.com)</option>
+            <option value="subdomain">Subdomain (www.example.com)</option>
+            <option value="host">Host (includes port)</option>
+          </select>
+        </div>
+      </div>
+      <div class="muted">Placeholder: this option is a planned enhancement to control how site keys are derived. Currently saved as domain-level.</div>
+    </section>
+
+    <div class="actions" style="margin-top:8px;">
+      <button id="saveBtn" class="primary">Save</button>
+      <button id="cancelBtn">Close</button>
+      <div style="flex:1"></div>
+      <a href="https://github.com/yourusername/luma" target="_blank" rel="noopener" class="small">View on GitHub</a>
+    </div>
+
+    <footer>
+      <div class="small">Luma — Brightness Controller · Privacy-first: no external network requests or analytics.</div>
+    </footer>
+  </main>
+
+  <script>
+    // Options page script
+    // This page exposes "advanced" controls and import/export functionality.
+    // It uses chrome.storage (either sync or local) depending on the user's selection.
+    // Note: manifest must include "storage" permission for this to work.
+
+    const defaults = {
+      storageType: 'sync',
+      globalBrightness: 100,
+      smooth: false,
+      transitionMs: 200,
+      siteSettings: {}
+    };
+
+    const el = {
+      storageType: document.getElementById('storageType'),
+      defaultBrightness: document.getElementById('defaultBrightness'),
+      defaultRange: document.getElementById('defaultRange'),
+      defaultLabel: document.getElementById('defaultLabel'),
+      smoothToggle: document.getElementById('smoothToggle'),
+      transitionMs: document.getElementById('transitionMs'),
+      exportBtn: document.getElementById('exportBtn'),
+      importFile: document.getElementById('importFile'),
+      importBtn: document.getElementById('importBtn'),
+      resetSiteBtn: document.getElementById('resetSiteBtn'),
+      resetAllBtn: document.getElementById('resetAllBtn'),
+      saveBtn: document.getElementById('saveBtn'),
+      cancelBtn: document.getElementById('cancelBtn'),
+      siteScope: document.getElementById('siteScope')
+    };
+
+    // Select storage area (sync or local)
+    function storageArea() {
+      return el.storageType.value === 'local' ? chrome.storage.local : chrome.storage.sync;
+    }
+
+    // Load settings into the UI
+    function loadSettings() {
+      // Try sync first (chrome.storage.sync may be empty) but prefer the chosen type
+      const preferred = storageArea();
+
+      preferred.get(['globalBrightness','smooth','transitionMs','siteSettings'], (data) => {
+        // If nothing found and using sync, fall back to local defaults
+        const s = Object.assign({}, defaults, data);
+        // If storage area was sync but didn't contain keys, attempt to merge with local
+        if (el.storageType.value === 'sync' && (data.globalBrightness === undefined && data.siteSettings === undefined)) {
+          chrome.storage.local.get(['globalBrightness','smooth','transitionMs','siteSettings'], (localData) => {
+            // Merge local data if present
+            if (Object.keys(localData).length) {
+              Object.assign(s, localData);
+            }
+            populateUI(s);
+          });
+        } else {
+          populateUI(s);
+        }
+      });
+    }
+
+    function populateUI(state) {
+      el.defaultBrightness.value = state.globalBrightness;
+      el.defaultRange.value = state.globalBrightness;
+      el.defaultLabel.textContent = state.globalBrightness + '%';
+      el.smoothToggle.checked = Boolean(state.smooth);
+      el.transitionMs.value = Number(state.transitionMs) || defaults.transitionMs;
+      el.siteScope.value = state.siteScope || 'domain';
+    }
+
+    // Save settings
+    function saveSettings() {
+      const val = Number(el.defaultBrightness.value) || defaults.globalBrightness;
+      const payload = {
+        globalBrightness: clamp(val, 10, 200),
+        smooth: !!el.smoothToggle.checked,
+        transitionMs: Number(el.transitionMs.value) || defaults.transitionMs
+      };
+
+      // Write to chosen storage area
+      const area = storageArea();
+      area.set(payload, () => {
+        // If user switched to sync, we don't delete local entries automatically.
+        // Provide a message in future versions. For now, we show a quick confirmation.
+        // Also send a runtime message so content scripts may reapply.
+        chrome.runtime.sendMessage({ type: 'luma-options-saved' }, () => {});
+        showToast('Settings saved');
+      });
+    }
+
+    // Utility: clamp a number
+    function clamp(n, lo, hi) {
+      return Math.max(lo, Math.min(hi, n));
+    }
+
+    // Export settings from both sync and local into a JSON blob
+    function exportSettings() {
+      // Get both storages (to give user a complete backup)
+      chrome.storage.sync.get(null, (syncData) => {
+        chrome.storage.local.get(null, (localData) => {
+          const exportData = {
+            exportedAt: new Date().toISOString(),
+            sync: syncData,
+            local: localData
+          };
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'luma-settings.json';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          showToast('Export started');
+        });
+      });
+    }
+
+    // Import settings from a JSON file
+    function importSettings() {
+      const file = el.importFile.files && el.importFile.files[0];
+      if (!file) {
+        showToast('Choose a JSON file first');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          // If file matches our export format, merge into storages
+          const syncData = data.sync || {};
+          const localData = data.local || {};
+          // Write to storage areas (merge safely)
+          chrome.storage.sync.set(syncData, () => {
+            chrome.storage.local.set(localData, () => {
+              showToast('Import complete');
+              loadSettings();
+              chrome.runtime.sendMessage({ type: 'luma-imported' }, () => {});
+            });
+          });
+        } catch (err) {
+          showToast('Invalid JSON file');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Reset site overrides only (clear siteSettings key)
+    function resetSiteOverrides() {
+      const area = storageArea();
+      area.get(['siteSettings'], (data) => {
+        if (!data.siteSettings || Object.keys(data.siteSettings).length === 0) {
+          showToast('No site overrides found');
+          return;
+        }
+        area.set({ siteSettings: {} }, () => {
+          showToast('Site overrides cleared');
+          chrome.runtime.sendMessage({ type: 'luma-reset-site' }, () => {});
+        });
+      });
+    }
+
+    // Reset everything (both storages)
+    function resetAll() {
+      // Clear both storages to be safe
+      chrome.storage.sync.clear(() => {
+        chrome.storage.local.clear(() => {
+          // Reinitialize with defaults in sync
+          chrome.storage.sync.set({
+            globalBrightness: defaults.globalBrightness,
+            siteSettings: {},
+            smooth: defaults.smooth,
+            transitionMs: defaults.transitionMs
+          }, () => {
+            showToast('All data reset to defaults');
+            loadSettings();
+            chrome.runtime.sendMessage({ type: 'luma-reset-all' }, () => {});
+          });
+        });
+      });
+    }
+
+    // Simple ephemeral toast (no external deps)
+    let toastTimer = null;
+    function showToast(msg) {
+      let t = document.getElementById('__luma_toast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = '__luma_toast';
+        Object.assign(t.style, {
+          position: 'fixed',
+          right: '16px',
+          bottom: '18px',
+          background: 'rgba(15,23,42,0.9)',
+          color: '#fff',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          zIndex: 99999,
+          fontSize: '13px'
+        });
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      t.style.opacity = '1';
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        t.style.transition = 'opacity 300ms';
+        t.style.opacity = '0';
+      }, 1400);
+    }
+
+    // Wire events
+    el.defaultRange.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      el.defaultLabel.textContent = v + '%';
+      el.defaultBrightness.value = v;
+    });
+
+    el.defaultBrightness.addEventListener('input', (e) => {
+      const v = Number(e.target.value) || 0;
+      el.defaultRange.value = clamp(v, 10, 200);
+      el.defaultLabel.textContent = el.defaultRange.value + '%';
+    });
+
+    el.saveBtn.addEventListener('click', () => {
+      saveSettings();
+    });
+
+    el.cancelBtn.addEventListener('click', () => {
+      window.close();
+    });
+
+    el.exportBtn.addEventListener('click', exportSettings);
+    el.importBtn.addEventListener('click', importSettings);
+    el.resetSiteBtn.addEventListener('click', () => {
+      if (confirm('Clear all site-specific brightness overrides?')) {
+        resetSiteOverrides();
+      }
+    });
+    el.resetAllBtn.addEventListener('click', () => {
+      if (confirm('Reset all Luma settings (this will clear saved brightness values)?')) {
+        resetAll();
+      }
+    });
+
+    // Keep the displayed UI consistent if other parts of extension change storage
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      // If global brightness or smooth/transition changed somewhere else, reload to reflect new values
+      if (changes.globalBrightness || changes.smooth || changes.transitionMs || changes.siteSettings) {
+        loadSettings();
+      }
+    });
+
+    // Initialize the form with stored values
+    document.addEventListener('DOMContentLoaded', loadSettings);
+  </script>
+</body>
+</html>

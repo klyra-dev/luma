@@ -1,140 +1,189 @@
-# Brightness Controller Chrome Extension
+# Luma — Brightness Controller
 
-A lightweight Chrome extension that allows users to control the brightness of web pages globally and on a per-site basis.
+Luma is a lightweight, privacy-first Chrome extension that lets you adjust the brightness of web pages globally and per-site. It is designed for simplicity, performance, and transparency: no tracking, no analytics, and no network connections for user data. All settings are stored locally in the user's browser via the Chrome storage APIs.
 
-> 🔒 **Privacy First**: This extension does NOT collect, store, or transmit any user data. All settings are stored locally using Chrome's storage API.
-
----
-
-## ✨ Features
-
-* 🌐 Global brightness control for all websites
-* 🎯 Per-site brightness customization
-* ⚡ Instant updates without page reload
-* 🧩 Simple and minimal UI
-* 🔒 Zero data collection or tracking
+Status: Stable — ready for use and contribution.
 
 ---
 
-## 📁 Project Structure
-
-```
-brightness-controller/
-│
-├── manifest.json        # Extension configuration
-├── background.js        # Background service worker (optional logic)
-├── content.js           # Injected script to apply brightness
-├── popup.html           # Extension popup UI
-├── popup.js             # Handles UI interactions and storage
-├── styles.css (optional)# Styling for popup (if separated later)
-└── README.md            # Project documentation
-```
+Table of contents
+- Features
+- Privacy & Security
+- Installation
+  - Developer (load unpacked)
+  - Packaging & publishing
+- Usage
+- How it works (technical)
+- File / project structure
+- Development notes
+- Contributing
+- Troubleshooting
+- License
 
 ---
 
-## ⚙️ How It Works
+Features
+- Global brightness control for all webpages.
+- Per-site (domain-level) overrides.
+- Instant preview from the extension popup without reloading pages.
+- Minimal permissions: `storage`, `activeTab`, `scripting`. Host permission: `<all_urls>` only to apply brightness across pages.
+- Accessibility-conscious UI: keyboard-friendly controls and clear labels.
+- Privacy-first: no telemetry, no external requests, everything is stored locally.
 
-### 1. Brightness Application
+---
 
-The extension uses CSS filters to adjust brightness:
+Privacy & security
 
-```js
-document.documentElement.style.filter = `brightness(${value}%)`;
-```
+Luma is built with privacy as a first-class requirement:
 
-This visually modifies the page without altering its content.
+- No user data is collected, transmitted, or stored outside the browser.
+- No analytics, no remote logging, and no third-party SDKs.
+- All settings (global and per-site) are stored locally using Chrome's storage (sync where available).
+- The extension only runs code to apply CSS-based brightness filters and to read/write settings from storage.
+- If you want a fully local-only configuration, you can switch from `chrome.storage.sync` to `chrome.storage.local` in the source.
 
-### 2. Storage System
+If you'd like to review exactly what the extension stores, check the storage keys:
+- `globalBrightness` — numeric percentage (default `100`).
+- `siteSettings` — object keyed by hostname, e.g. `{ "example.com": 80 }`.
 
-Uses Chrome's built-in storage:
+---
 
-* `globalBrightness`: Default brightness value
-* `siteSettings`: Object storing per-domain brightness
+Installation (Developer / Local testing)
 
-Example structure:
+1. Clone the repository:
+   git clone https://github.com/klyra-dev/luma.git
+2. Open Chrome and navigate to:
+   chrome://extensions/
+3. Enable "Developer mode" (top-right).
+4. Click "Load unpacked" and choose the project folder (root of the repo).
+5. The extension should appear in your toolbar. Click it to open the popup and adjust brightness.
 
+Notes:
+- During development you can use Chrome's extension inspector to see console logs from the popup, background worker, and content scripts.
+- If you change `manifest.json` you may need to reload the extension from the extensions page.
+
+Packaging & publishing
+
+- To publish to the Chrome Web Store follow Google’s developer documentation for packaging and uploading a ZIP of the extension files.
+- Ensure icons and screenshots are included in the store listing and that the `manifest.json` version is updated for each release.
+
+---
+
+Usage
+
+- Click the Luma icon in the toolbar to open the popup.
+- Drag the slider to preview brightness on the active tab instantly.
+- Buttons:
+  - "Save Global" — sets the default brightness applied to all sites that do not have a site override.
+  - "Save Site" — stores the current slider value as an override for the active domain.
+  - "Reset Site" — removes the site override for the active domain (falls back to global).
+  - "Reset Global" — sets the global brightness to the default (100%).
+- The popup shows the current effective value and updates the active tab immediately while you drag the slider.
+
+Best practices:
+- Use per-site overrides for very bright or very dark sites where readability differs.
+- Default global range is 50% to 150% (configurable in code).
+
+---
+
+How it works (technical summary)
+
+- content script (`content.js`) runs on page load (`document_idle`) and:
+  - Retrieves the hostname of the page.
+  - Reads `siteSettings` and `globalBrightness` from storage.
+  - Applies the effective brightness via CSS filter:
+    document.documentElement.style.filter = `brightness(XX%)`;
+  - Listens for storage changes and runtime messages to reapply settings without reload.
+- popup (`popup.html` + `popup.js`) provides a local UI to preview and save settings:
+  - Uses `chrome.scripting.executeScript` (or messaging to content script) to preview the slider value on the active tab.
+  - Saves values into `chrome.storage.sync` so settings can optionally sync across the user's devices.
+- background worker (`background.js`) initializes sane defaults on install and can be extended for future features.
+
+Storage schema example
 ```json
 {
   "globalBrightness": 100,
   "siteSettings": {
-    "example.com": 80
+    "example.com": 80,
+    "news.example.org": 110
   }
 }
 ```
 
-### 3. Priority Logic
+---
 
-When a page loads:
+Project structure
 
-1. Check if a site-specific setting exists
-2. If yes → apply it
-3. Otherwise → use global brightness
+- `manifest.json` — extension manifest and permissions
+- `popup.html` — the popup UI
+- `popup.js` — popup interactivity and preview logic
+- `content.js` — content script that applies brightness to pages
+- `background.js` — service worker for extension lifecycle events
+- `icons/` — icons used by the extension
+- `README.md` — this file
+- `LICENSE` — project license (MIT by default)
+- `CONTRIBUTING.md` — guidelines for contributing
+- `CODE_OF_CONDUCT.md` — community guidelines
 
 ---
 
-## 🚀 Installation (Development)
+Development notes
 
-1. Clone or download this repository
-2. Open Chrome and go to:
+- Use plain, dependency-free JavaScript for portability and small bundle size.
+- Prefer `chrome.storage.sync` for a better user experience (sync across devices), but be mindful of quota limits. If you expect many site entries, consider `chrome.storage.local`.
+- Keep the content script defensive: some pages disallow DOM changes or throw on style access. Catch and ignore those errors to avoid noisy failures.
+- For previewing, prefer `scripting.executeScript` from the popup to avoid race conditions and to keep the popup stateless.
 
-   ```
-   chrome://extensions/
-   ```
-3. Enable **Developer Mode** (top right)
-4. Click **Load unpacked**
-5. Select the project folder
-
----
-
-## 🧪 Usage
-
-1. Click the extension icon
-2. Adjust the brightness slider
-3. Choose:
-
-   * **Save Global** → applies to all sites
-   * **Save For This Site** → overrides current domain
+Accessibility
+- Ensure slider and buttons have accessible labels.
+- Ensure keyboard users can operate all controls (tab focus and enter/space on buttons).
+- Avoid small touch targets in the popup.
 
 ---
 
-## 🔐 Privacy Policy
+Contributing
 
-This extension is built with user privacy as a core principle:
+Thanks for considering contributing! A few guidelines:
+- Open an issue for discussion before building large features.
+- Keep pull requests focused and small.
+- Include screenshots/GIFs for UI changes.
+- Follow the existing code style (simple, well-documented JS).
+- Add tests where practical for logic (e.g., storage handling, parsing hostnames).
 
-* ❌ No data collection
-* ❌ No analytics or tracking
-* ❌ No external API calls
-* ❌ No third-party integrations
-* ✅ All data stays locally in your browser
+Suggested labels:
+- bug
+- enhancement
+- docs
+- help wanted
 
----
-
-## 🛠 Future Improvements
-
-* Smooth brightness transitions
-* Presets (Night / Reading / Dim)
-* Keyboard shortcuts
-* Scheduled brightness (day/night)
-* UI enhancements
+Community
+- Be respectful and follow `CODE_OF_CONDUCT.md`.
 
 ---
 
-## 📜 License
+Troubleshooting
 
-MIT License
+- "Slider doesn't preview on some pages": Some pages restrict script execution or are special Chrome pages. The extension cannot modify internal browser pages (chrome://, new tab, extension pages).
+- "Changes don't persist": Ensure Chrome sync is enabled for extensions (if you rely on `storage.sync`) and that storage quotas have not been exceeded.
+- "Extension not visible": Check `chrome://extensions/` for errors and ensure Developer Mode is enabled when loading unpacked.
 
----
-
-## 🤝 Contributing
-
-Pull requests are welcome. For major changes, please open an issue first to discuss what you'd like to change.
-
----
-
-## 💡 Notes
-
-This extension is intentionally minimal, focusing on performance, simplicity, and privacy.
+Logging
+- Minimal console logging is used for debugging (background and content scripts). In production builds consider removing or gating logs behind a debug flag.
 
 ---
 
-**Made with simplicity and privacy in mind.**
+License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+---
+
+Acknowledgements
+
+Built with a focus on privacy, simplicity, and accessibility. Contributions and feedback welcome.
+
+---
+
+Contact / links
+- GitHub: https://github.com/klyra-dev/luma
+- Issues: https://github.com/klyra-dev/luma/issues

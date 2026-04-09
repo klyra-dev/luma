@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Luma — Brightness</title>
+  <style>
+    :root {
+      --bg: #fff;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --border: #e6e6e9;
+      --radius: 8px;
+      --shadow: 0 6px 18px rgba(16,24,40,0.08);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: light;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 12px;
+      width: 280px;
+      background: var(--bg);
+      color: #111827;
+      font-size: 13px;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    header {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .logo {
+      width:36px;
+      height:36px;
+      border-radius:8px;
+      background: linear-gradient(135deg,#9ad0ff,#5aa7ff);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-weight:700;
+      box-shadow: var(--shadow);
+      flex:0 0 36px;
+    }
+
+    h1 {
+      font-size:15px;
+      margin:0;
+      line-height:1;
+      font-weight:600;
+    }
+
+    p.subtitle {
+      margin:0;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .control {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-top:12px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance:none;
+      appearance:none;
+      width:100%;
+      height:28px;
+      background:transparent;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height:6px;
+      background:var(--border);
+      border-radius:999px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none;
+      width:18px;
+      height:18px;
+      margin-top:-6px;
+      border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 2px 6px rgba(37,99,235,0.22);
+      border: 2px solid #fff;
+    }
+
+    .value {
+      min-width:56px;
+      text-align:right;
+      font-variant-numeric: tabular-nums;
+      color:var(--muted);
+    }
+
+    .actions {
+      display:flex;
+      gap:8px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
+    button {
+      border:1px solid var(--border);
+      background:#fff;
+      padding:7px 10px;
+      border-radius:8px;
+      font-size:13px;
+      cursor:pointer;
+      color:#111827;
+    }
+
+    button.primary {
+      background:var(--accent);
+      color:#fff;
+      border-color:transparent;
+    }
+
+    button.ghost {
+      background:transparent;
+    }
+
+    footer {
+      margin-top:10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+
+    small {
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    a.repo {
+      color:var(--accent);
+      text-decoration:none;
+      font-size:12px;
+    }
+
+    .sr-only {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden;
+      clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo" aria-hidden="true">L</div>
+    <div>
+      <h1>Luma</h1>
+      <p class="subtitle">Brightness control — global & per-site</p>
+    </div>
+  </header>
+
+  <label for="brightnessSlider" class="sr-only">Page brightness</label>
+  <div class="control" role="group" aria-label="Brightness control">
+    <input id="brightnessSlider" type="range" min="50" max="150" step="1" value="100" />
+    <div id="valueLabel" class="value" aria-live="polite">100%</div>
+  </div>
+
+  <div class="actions" role="group" aria-label="Actions">
+    <button id="saveGlobal" class="primary" title="Save as default for all sites">Save Global</button>
+    <button id="saveSite" title="Save for this site">Save Site</button>
+    <button id="resetSite" class="ghost" title="Clear site override">Reset Site</button>
+    <button id="resetGlobal" class="ghost" title="Reset global to 100%">Reset Global</button>
+  </div>
+
+  <footer>
+    <small>No data leaves your browser</small>
+    <a id="openRepo" class="repo" href="#" target="_blank" rel="noopener">View on GitHub</a>
+  </footer>
+
+  <script>
+    // Compact popup script for preview + controls.
+    // Keeps logic local and accessible.
+    const slider = document.getElementById('brightnessSlider');
+    const valueLabel = document.getElementById('valueLabel');
+    const saveGlobalBtn = document.getElementById('saveGlobal');
+    const saveSiteBtn = document.getElementById('saveSite');
+    const resetSiteBtn = document.getElementById('resetSite');
+    const resetGlobalBtn = document.getElementById('resetGlobal');
+    const openRepo = document.getElementById('openRepo');
+
+    openRepo.href = 'https://github.com/yourusername/luma'; // update to your repo
+
+    function setLabel(v) {
+      valueLabel.textContent = v + '%';
+    }
+
+    function getActiveTab() {
+      return new Promise((resolve) => {
+        try {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            resolve(tabs && tabs[0]);
+          });
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+
+    // Apply a preview to the active tab using the scripting API.
+    // Uses a safe apply function inside the page context.
+    async function previewOnActiveTab(brightness) {
+      const tab = await getActiveTab();
+      if (!tab || !tab.id) return;
+      try {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: (value) => {
+            try {
+              // Use a CSS variable to minimize collisions and make the change easy to revert.
+              document.documentElement.style.setProperty('--luma-brightness', value + '%');
+              document.documentElement.style.filter = `brightness(var(--luma-brightness))`;
+            } catch (e) {
+              // ignore pages that block scripting
+            }
+          },
+          args: [brightness]
+        }).catch(() => { /* ignore injection failures */ });
+      } catch (e) {
+        // Silent fallback for older contexts
+      }
+    }
+
+    // Initialize UI from storage
+    function init() {
+      try {
+        chrome.storage.sync.get(['globalBrightness', 'siteSettings'], async (data) => {
+          const globalBrightness = Number(data.globalBrightness ?? 100);
+          let initial = globalBrightness;
+
+          // try to apply site setting if present
+          const tab = await getActiveTab();
+          if (tab && tab.url) {
+            try {
+              const hostname = new URL(tab.url).hostname;
+              if (data.siteSettings && typeof data.siteSettings[hostname] !== 'undefined') {
+                initial = Number(data.siteSettings[hostname]);
+              }
+            } catch (e) { /* ignore invalid URLs */ }
+          }
+
+          slider.value = initial;
+          setLabel(initial);
+          previewOnActiveTab(initial);
+        });
+      } catch (e) {
+        // if storage is unavailable, fall back to defaults
+        slider.value = 100;
+        setLabel(100);
+        previewOnActiveTab(100);
+      }
+    }
+
+    slider.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      setLabel(v);
+      previewOnActiveTab(v);
+    });
+
+    saveGlobalBtn.addEventListener('click', () => {
+      const v = Number(slider.value);
+      chrome.storage.sync.set({ globalBrightness: v }, () => {
+        // notify content scripts (they also listen to storage changes)
+        chrome.runtime.sendMessage({ type: 'brightness-updated' });
+        // keep the popup focused for keyboard users
+        saveGlobalBtn.blur();
+      });
+    });
+
+    saveSiteBtn.addEventListener('click', async () => {
+      const v = Number(slider.value);
+      const tab = await getActiveTab();
+      if (!tab || !tab.url) return;
+      let hostname;
+      try { hostname = new URL(tab.url).hostname; } catch (e) { hostname = null; }
+      if (!hostname) return;
+      chrome.storage.sync.get(['siteSettings'], (data) => {
+        const siteSettings = data.siteSettings || {};
+        siteSettings[hostname] = v;
+        chrome.storage.sync.set({ siteSettings }, () => {
+          chrome.runtime.sendMessage({ type: 'brightness-updated' });
+          saveSiteBtn.blur();
+        });
+      });
+    });
+
+    resetSiteBtn.addEventListener('click', async () => {
+      const tab = await getActiveTab();
+      if (!tab || !tab.url) return;
+      let hostname;
+      try { hostname = new URL(tab.url).hostname; } catch (e) { hostname = null; }
+      if (!hostname) return;
+      chrome.storage.sync.get(['siteSettings','globalBrightness'], (data) => {
+        const siteSettings = data.siteSettings || {};
+        if (siteSettings && siteSettings.hasOwnProperty(hostname)) {
+          delete siteSettings[hostname];
+          chrome.storage.sync.set({ siteSettings }, () => {
+            const newVal = Number(data.globalBrightness ?? 100);
+            slider.value = newVal;
+            setLabel(newVal);
+            previewOnActiveTab(newVal);
+            chrome.runtime.sendMessage({ type: 'brightness-updated' });
+          });
+        }
+      });
+    });
+
+    resetGlobalBtn.addEventListener('click', () => {
+      const defaultValue = 100;
+      chrome.storage.sync.set({ globalBrightness: defaultValue }, () => {
+        slider.value = defaultValue;
+        setLabel(defaultValue);
+        previewOnActiveTab(defaultValue);
+        chrome.runtime.sendMessage({ type: 'brightness-updated' });
+      });
+    });
+
+    // Keep the preview consistent if storage changes while popup is open
+    try {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'sync') return;
+        if (changes.globalBrightness || changes.siteSettings) {
+          init();
+        }
+      });
+    } catch (e) { /* ignore if unavailable */ }
+
+    // Initialize when popup opens
+    init();
+  </script>
+</body>
+</html>
