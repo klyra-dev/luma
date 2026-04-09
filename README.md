@@ -121,7 +121,7 @@ This extension is built with user privacy as a core principle:
 
 ## 📜 License
 
-MIT License (or choose your preferred license)
+MIT License
 
 ---
 
