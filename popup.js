@@ -25,7 +25,7 @@
   const openRepo = document.getElementById('openRepo');
 
   // Fallback repo URL - update to your repo if desired
-  if (openRepo) openRepo.href = 'https://github.com/yourusername/luma';
+  if (openRepo) openRepo.href = 'https://github.com/klyra-dev/luma';
 
   const DEFAULT_BRIGHTNESS = 100;
 
